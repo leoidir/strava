@@ -1,0 +1,355 @@
+{
+  "$schema": "https://api.supermetrics.com/cc/v1/schema/connector",
+  "authentication": {
+    "type": "oauth2",
+    "oauth2": {
+      "clientId": "YOUR_STRAVA_CLIENT_ID",
+      "clientSecret": "YOUR_STRAVA_CLIENT_SECRET",
+      "tokenLifetime": 21600,
+      "tokenJsonPath": "$.access_token",
+      "authorization": {
+        "request": {
+          "url": "https://www.strava.com/oauth/authorize",
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "{{oauth2.client_id}}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "{{oauth2.callback_url}}/login-complete"
+            },
+            {
+              "name": "response_type",
+              "value": "code"
+            },
+            {
+              "name": "approval_prompt",
+              "value": "force"
+            },
+            {
+              "name": "scope",
+              "value": "read,activity:read_all,profile:read_all"
+            }
+          ]
+        }
+      },
+      "tokenExchange": {
+        "request": {
+          "method": "POST",
+          "url": "https://www.strava.com/oauth/token",
+          "body": {
+            "type": "urlencoded_form",
+            "formData": [
+              {
+                "name": "client_id",
+                "value": "{{oauth2.client_id}}"
+              },
+              {
+                "name": "client_secret",
+                "value": "{{oauth2.client_secret}}"
+              },
+              {
+                "name": "code",
+                "value": "{{oauth2.code}}"
+              },
+              {
+                "name": "grant_type",
+                "value": "authorization_code"
+              }
+            ]
+          }
+        }
+      },
+      "refresh": {
+        "request": {
+          "method": "POST",
+          "url": "https://www.strava.com/oauth/token",
+          "body": {
+            "type": "urlencoded_form",
+            "formData": [
+              {
+                "name": "client_id",
+                "value": "{{oauth2.client_id}}"
+              },
+              {
+                "name": "client_secret",
+                "value": "{{oauth2.client_secret}}"
+              },
+              {
+                "name": "grant_type",
+                "value": "refresh_token"
+              },
+              {
+                "name": "refresh_token",
+                "value": "{{oauth2.refresh_token}}"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "dataSourceUser": {
+    "userInfo": {
+      "id": {
+        "source": "static",
+        "value": "1234"
+      },
+      "label": {
+        "source": "static",
+        "value": "leo"
+      }
+    }
+  },
+  "accounts": {
+    "hasAccounts": true,
+    "fetchers": [
+      {
+        "request": {
+          "url": "https://www.strava.com/api/v3/athlete",
+          "headers": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{user.access_token}}"
+            }
+          ],
+          "response": {
+            "dataRows": {
+              "source": "jsonPath",
+              "value": "$"
+            }
+          }
+        },
+        "accountInfo": {
+          "id": {
+            "source": "jsonPath",
+            "value": "$.id"
+          },
+          "label": {
+            "source": "jsonPath",
+            "value": "$.firstname"
+          }
+        }
+      }
+    ]
+  },
+  "reporting": {
+    "reportTypes": [
+      {
+        "id": "strava_full_comparison_v16",
+        "title": "Athlete World Performance Dashboard",
+        "request": {
+          "method": "GET",
+          "url": "https://www.strava.com/api/v3/athlete/activities",
+          "headers": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{user.access_token}}"
+            }
+          ],
+          "parameters": [
+            {
+              "name": "after",
+              "value": "{{query.start_date.timestamp}}"
+            },
+            {
+              "name": "before",
+              "value": "{{query.end_date.timestamp}}"
+            },
+            {
+              "name": "per_page",
+              "value": "50"
+            }
+          ],
+          "response": {
+            "type": "JSON",
+            "dataRows": {
+              "source": "jsonPath",
+              "value": "$.*"
+            }
+          },
+          "chainedRequest": {
+            "method": "GET",
+            "url": "https://www.strava.com/api/v3/activities/{{row.id}}",
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "Bearer {{user.access_token}}"
+              }
+            ],
+            "response": {
+              "type": "JSON",
+              "dataRows": {
+                "source": "jsonPath",
+                "value": "$"
+              }
+            }
+          }
+        },
+        "dimensions": {
+          "groups": [
+            {
+              "label": "Identity & Location",
+              "fields": [
+                {
+                  "id": "v16_date",
+                  "label": "Date",
+                  "dataType": "string.time.date",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.start_date_local"
+                  }
+                },
+                {
+                  "id": "v16_name",
+                  "label": "Name",
+                  "dataType": "string.text.value",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.name"
+                  }
+                },
+                {
+                  "id": "v16_sport",
+                  "label": "Sport Type",
+                  "dataType": "string.text.value",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.sport_type"
+                  }
+                },
+                {
+                  "id": "v16_lat",
+                  "label": "Latitude",
+                  "dataType": "float.number.value",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.start_latlng[0]"
+                  }
+                },
+                {
+                  "id": "v16_lng",
+                  "label": "Longitude",
+                  "dataType": "float.number.value",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.start_latlng[1]"
+                  }
+                },
+                {
+                  "id": "v16_device",
+                  "label": "Device Name",
+                  "dataType": "string.text.value",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.device_name"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "metrics": {
+          "groups": [
+            {
+              "label": "Performance Comparisons",
+              "fields": [
+                {
+                  "id": "m_dist",
+                  "label": "Distance (m)",
+                  "dataType": "float.number.value",
+                  "aggregationType": "sum",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.distance"
+                  }
+                },
+                {
+                  "id": "m_mov",
+                  "label": "Moving Time (s)",
+                  "dataType": "int.number.value",
+                  "aggregationType": "sum",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.moving_time"
+                  }
+                },
+                {
+                  "id": "m_hr_avg",
+                  "label": "Avg Heart Rate",
+                  "dataType": "float.number.value",
+                  "aggregationType": "avg",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.average_heartrate"
+                  }
+                },
+                {
+                  "id": "m_hr_max",
+                  "label": "Max Heart Rate",
+                  "dataType": "float.number.value",
+                  "aggregationType": "max",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.max_heartrate"
+                  }
+                },
+                {
+                  "id": "m_watts",
+                  "label": "Avg Watts",
+                  "dataType": "float.number.value",
+                  "aggregationType": "avg",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.average_watts"
+                  }
+                },
+                {
+                  "id": "m_cadence",
+                  "label": "Avg Cadence",
+                  "dataType": "float.number.value",
+                  "aggregationType": "avg",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.average_cadence"
+                  }
+                },
+                {
+                  "id": "m_speed_avg",
+                  "label": "Avg Speed (m/s)",
+                  "dataType": "float.number.value",
+                  "aggregationType": "avg",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.average_speed"
+                  }
+                },
+                {
+                  "id": "m_speed_max",
+                  "label": "Max Speed (m/s)",
+                  "dataType": "float.number.value",
+                  "aggregationType": "max",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.max_speed"
+                  }
+                },
+                {
+                  "id": "m_elev",
+                  "label": "Elevation Gain (m)",
+                  "dataType": "float.number.value",
+                  "aggregationType": "sum",
+                  "value": {
+                    "source": "jsonPath",
+                    "value": "$.total_elevation_gain"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
