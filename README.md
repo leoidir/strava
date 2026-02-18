@@ -1,29 +1,33 @@
-# Strava Custom Connector for Supermetrics
+# 🏃‍♂️ Strava Custom Connector for Supermetrics
 
-**Developer:** Léo IDIR
+**by Léo IDIR**
 
-This repository provides a high-fidelity JSON configuration for building a custom Strava API connector via Supermetrics. The integration is engineered to bypass API extraction limits by establishing a persistent data pipeline into Google Sheets, enabling long-term performance tracking and custom analytics.
+Transform your Strava activities into a high-precision performance database. This project leverages the **Supermetrics Connector Builder** to create a seamless pipeline from Strava to Google Sheets and Looker Studio.
 
-## ⚙️ Step 1: Strava API Registration
+Whether you're tracking your global "World Tour" progress or deep-diving into power zones, this connector gives your fitness data the "Supermetrics treatment."
 
-To authenticate the connector, you must register your application instance on the Strava Developer portal.
+---
 
-1. **Register:** Visit [Strava API Settings](https://www.strava.com/settings/api).
-2. **App Configuration:**
+## 🚀 Quick Start Guide
+
+### ⚙️ Step 1: Strava API Registration
+
+You must register your personal instance on the Strava Developer portal to enable data access.
+
+1. **Visit:** [Strava API Settings](https://www.strava.com/settings/api).
+2. **Configure App:**
 * **Application Name:** `Supermetrics Connector`
 * **Category:** `Data Importer`
 * **Authorization Callback Domain:** `supermetrics.com`
 
 
-3. **Credentials:** Secure your **Client ID** and **Client Secret**. These act as the "keys" for your JSON configuration.
+3. **Secure Credentials:** Note your **Client ID** and **Client Secret**. You will need these for the JSON configuration.
 
----
+### 🛠️ Step 2: Deployment & Configuration
 
-## 🛠️ Step 2: Deployment & Configuration
-
-1. **Initialize:** Open the **Supermetrics Custom Connector Builder**.
-2. **Code Injection:** Copy the content of the `strava.json` file from this repository.
-3. **Credential Update:** Replace the following placeholders in the JSON with your Strava credentials:
+1. **Open Builder:** Navigate to the **Supermetrics Custom Connector Builder**.
+2. **Inject Code:** Copy the content of the `strava.json` file from this repository.
+3. **Update Keys:** Replace the following placeholders in the JSON with your actual Strava credentials:
 ```json
 "clientId": "YOUR_STRAVA_CLIENT_ID",
 "clientSecret": "YOUR_STRAVA_CLIENT_SECRET"
@@ -31,47 +35,48 @@ To authenticate the connector, you must register your application instance on th
 ```
 
 
-4. **Chained Requests:** This connector is optimized to first fetch the activity list and then execute a secondary "chained" request for each activity ID to retrieve granular telemetry (heart rate, power, cadence).
+4. **How it Works:** This connector uses **Chained Requests**. It first fetches your activity list, then executes a secondary request for each Activity ID to retrieve granular telemetry like heart rate, power, and cadence.
 
----
+### 📊 Step 3: Archiving to Google Sheets
 
-## 📊 Step 3: Automated Archiving (Google Sheets)
-
-By routing data into Google Sheets, you create a permanent historical archive that persists even if Strava's API availability changes.
+Bypass API rolling windows by creating a permanent historical archive in Sheets.
 
 1. **Launch:** Open the Supermetrics extension in Google Sheets.
 2. **Query Setup:**
 * **Source:** Select your custom "Strava" connector.
-* **Dimensions:** Date, Activity Name, Sport Type, Latitude, Longitude.
-* **Metrics:** Distance, Moving Time, Avg Heart Rate, Avg Watts, Elevation Gain.
+* **Dimensions:** `Date`, `Activity Name`, `Sport Type`, `Latitude`, `Longitude`.
+* **Metrics:** `Distance`, `Moving Time`, `Avg Heart Rate`, `Avg Watts`, `Elevation Gain`.
 
 
-3. **Scheduling:** Set a **Refresh Trigger** (e.g., daily at 05:00) to automate the data ingestion.
-
----
-
-## 🔧 Step 4: Troubleshooting & Maintenance
-
-### Common Issue: Authorization Expiration
-
-If your data stops refreshing, it is likely due to an expired OAuth token.
-
-* **The Fix:** Ensure the `tokenLifetime` in your JSON is set to `21600` (6 hours). The connector is designed to use `refresh_token` automatically, but if a manual re-auth is needed, simply re-run the "log in" flow from the Supermetrics query side-bar.
-
-### Missing Data Fields
-
-If metrics like **Heart Rate** or **Watts** are showing as null:
-
-* **Check Scopes:** Verify that you authorized the app with `activity:read_all`. Without this, Strava filters out sensitive performance telemetry.
-* **Device Compatibility:** Ensure the recording device (Garmin, Wahoo, etc.) actually writes these fields to the Strava activity.
+3. **Automate:** Set a **Refresh Trigger** (e.g., daily at 05:00) to keep your database updated while you sleep.
 
 ---
 
 ## 📈 Data Transformation Tips
 
-To use this data in Looker Studio or PowerBI:
+Once your data is in Google Sheets, use these tips for Looker Studio:
 
-* **Location:** Create a calculated field using `CONCAT(Latitude, ",", Longitude)` to generate a valid Geo-point.
-* **Distance:** Convert the raw meters (`m_dist`) to kilometers by creating a formula: `Distance (m) / 1000`.
+* **World Map Visualization:** Create a calculated field named `Location` with the formula:
+`CONCAT(Latitude, ",", Longitude)`
+*Set the data type to **Geo > Latitude, Longitude**.*
+* **Unit Conversion:** Convert raw meters to kilometers:
+`Distance (m) / 1000`
+
+---
+
+## 🔧 Troubleshooting & Maintenance
+
+### Common Issue: Authorization Expiration
+
+If data stops refreshing, the OAuth token may need a manual kickstart.
+
+* **The Fix:** Ensure `tokenLifetime` in your JSON is `21600` (6 hours). If it fails, simply re-run the "Log In" flow from the Supermetrics query sidebar.
+
+### Missing Data (Heart Rate/Watts)
+
+If performance metrics are null:
+
+* **Check Scopes:** You must authorize the app with `activity:read_all` during the initial login. Without this, Strava hides sensitive telemetry.
+* **Device Check:** Ensure your Garmin/Wahoo/Apple Watch is actually capturing and uploading those specific metrics to Strava.
 
 ---
