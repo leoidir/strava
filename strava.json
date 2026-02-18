@@ -351,5 +351,14 @@
         }
       }
     ]
+  },
+  ,
+  "defaultResponseHandler": {
+    "responseStatuses": [
+      {
+        "httpStatus": 401,
+        "action": "renew_token"
+      }
+    ]
   }
 }
